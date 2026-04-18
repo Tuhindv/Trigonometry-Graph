@@ -61,17 +61,19 @@ function drawGrid() {
   ctx.stroke();
 }
 
-// 🔥 AXES
+// 🔥 AXES (WHITE FIX)
 function drawAxes() {
   ctx.beginPath();
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#ffffff";   // ✅ FIXED: white border/axis
+  ctx.lineWidth = 2.5;
 
   let centerX = canvas.width / 2 + offsetX;
 
+  // X axis
   ctx.moveTo(0, canvas.height / 2);
   ctx.lineTo(canvas.width, canvas.height / 2);
 
+  // Y axis
   ctx.moveTo(centerX, 0);
   ctx.lineTo(centerX, canvas.height);
 
@@ -157,7 +159,7 @@ function drawGraph(fn) {
   ctx.stroke();
 }
 
-// 🔴 POINT FIXED (VISIBLE ON MOBILE)
+// 🔴 POINT DISPLAY
 function drawPoint(fn, deg) {
   let sX = scaleX();
   let centerX = canvas.width / 2 + offsetX;
@@ -170,24 +172,12 @@ function drawPoint(fn, deg) {
 
   let py = canvas.height / 2 - y * getScaleY();
 
-  // 🔥 outer white border (for contrast)
   ctx.beginPath();
-  ctx.arc(x, py, 7, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-
-  // 🔥 main red point
-  ctx.beginPath();
+  ctx.fillStyle = "red";
   ctx.arc(x, py, 5, 0, Math.PI * 2);
-  ctx.fillStyle = "#ef4444";
   ctx.fill();
 
-  // 🔥 outline for clarity
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = "#111827";
-  ctx.stroke();
-
-  ctx.fillStyle = "#111827";
+  ctx.fillStyle = "black";
   ctx.font = "bold 13px Arial";
   ctx.fillText(`${fn}(${deg}°) = ${y.toFixed(2)}`, x + 10, py - 10);
 }
@@ -215,7 +205,9 @@ function drawFromInput() {
   if (!isNaN(deg)) drawPoint(currentFunc, deg);
 }
 
-// 🖱️ DESKTOP
+// =======================
+// 🖱️ DESKTOP SUPPORT
+// =======================
 canvas.addEventListener("wheel", (e) => {
   e.preventDefault();
   zoom *= e.deltaY < 0 ? 1.1 : 0.9;
@@ -238,7 +230,9 @@ canvas.addEventListener("mousemove", (e) => {
   drawFromInput();
 });
 
-// 📱 MOBILE
+// =======================
+// 📱 MOBILE SUPPORT
+// =======================
 canvas.addEventListener("touchstart", (e) => {
   if (e.touches.length === 1) {
     isDragging = true;
