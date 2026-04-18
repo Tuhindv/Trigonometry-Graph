@@ -9,26 +9,40 @@ let isDragging = false;
 let lastX = 0;
 let lastDist = null;
 
-// 🔥 resize canvas (full screen support)
+// =======================
+// 🔥 RESIZE (FIXED FOR MOBILE)
+// =======================
 function resizeCanvas() {
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
   drawFromInput();
 }
+
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// 🔥 dynamic Y scale (clear graph)
+canvas.style.touchAction = "none";
+
+// =======================
+// 📊 SCALES
+// =======================
 function getScaleY() {
-  return canvas.height / 6;
+  return canvas.height / (6 * (window.devicePixelRatio || 1));
 }
 
-// X scale
 function scaleX() {
-  return (canvas.width / (4 * Math.PI)) * zoom;
+  return (canvas.width / (4 * Math.PI)) * zoom / (window.devicePixelRatio || 1);
 }
 
-// trig functions
+// =======================
+// 📐 FUNCTIONS
+// =======================
 function getValue(fn, x) {
   switch (fn) {
     case "sin": return Math.sin(x);
@@ -40,13 +54,15 @@ function getValue(fn, x) {
   }
 }
 
-// 🔥 GRID
+// =======================
+// 🟩 GRID
+// =======================
 function drawGrid() {
   ctx.beginPath();
   ctx.strokeStyle = "#eee";
 
   let step = 40;
-  let startX = offsetX % step;
+  let startX = -((offsetX % step + step) % step);
 
   for (let x = startX; x < canvas.width; x += step) {
     ctx.moveTo(x, 0);
@@ -61,7 +77,9 @@ function drawGrid() {
   ctx.stroke();
 }
 
-// 🔥 AXES
+// =======================
+// ➕ AXES
+// =======================
 function drawAxes() {
   ctx.beginPath();
   ctx.strokeStyle = "#000";
@@ -69,11 +87,9 @@ function drawAxes() {
 
   let centerX = canvas.width / 2 + offsetX;
 
-  // X axis
   ctx.moveTo(0, canvas.height / 2);
   ctx.lineTo(canvas.width, canvas.height / 2);
 
-  // Y axis (moves with pan)
   ctx.moveTo(centerX, 0);
   ctx.lineTo(centerX, canvas.height);
 
@@ -81,7 +97,9 @@ function drawAxes() {
   ctx.lineWidth = 1;
 }
 
-// 🔥 π LABELS
+// =======================
+// π LABELS
+// =======================
 function drawXAxisLabels() {
   ctx.fillStyle = "black";
   ctx.font = "bold 13px Arial";
@@ -113,7 +131,9 @@ function drawXAxisLabels() {
   }
 }
 
-// 🔥 Y LABELS
+// =======================
+// Y LABELS
+// =======================
 function drawYAxisLabels() {
   ctx.fillStyle = "black";
   ctx.font = "bold 13px Arial";
@@ -126,7 +146,9 @@ function drawYAxisLabels() {
   }
 }
 
-// 🔥 GRAPH DRAW
+// =======================
+// GRAPH
+// =======================
 function drawGraph(fn) {
   let sX = scaleX();
   let centerX = canvas.width / 2 + offsetX;
@@ -141,7 +163,7 @@ function drawGraph(fn) {
     let x = (px - centerX) / sX;
     let y = getValue(fn, x);
 
-    if (!isFinite(y) || Math.abs(y) > 10) {
+    if (!isFinite(y) || Math.abs(y) > 5) {
       first = true;
       continue;
     }
@@ -159,7 +181,9 @@ function drawGraph(fn) {
   ctx.stroke();
 }
 
-// 🔴 POINT DISPLAY
+// =======================
+// POINT
+// =======================
 function drawPoint(fn, deg) {
   let sX = scaleX();
   let centerX = canvas.width / 2 + offsetX;
@@ -182,7 +206,9 @@ function drawPoint(fn, deg) {
   ctx.fillText(`${fn}(${deg}°) = ${y.toFixed(2)}`, x + 10, py - 10);
 }
 
-// 🔥 MAIN DRAW
+// =======================
+// MAIN DRAW
+// =======================
 function drawFromInput() {
   let expr = document.getElementById("expr").value.toLowerCase().trim();
 
@@ -193,6 +219,8 @@ function drawFromInput() {
 
   currentFunc = fnMatch[1];
   let deg = numMatch ? parseFloat(numMatch[0]) : NaN;
+
+  zoom = Math.max(0.5, Math.min(zoom, 5));
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -206,7 +234,7 @@ function drawFromInput() {
 }
 
 // =======================
-// 🖱️ DESKTOP SUPPORT
+// 🖱️ DESKTOP
 // =======================
 canvas.addEventListener("wheel", (e) => {
   e.preventDefault();
@@ -231,7 +259,7 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 // =======================
-// 📱 MOBILE SUPPORT
+// 📱 MOBILE
 // =======================
 canvas.addEventListener("touchstart", (e) => {
   if (e.touches.length === 1) {
@@ -247,7 +275,6 @@ canvas.addEventListener("touchstart", (e) => {
 canvas.addEventListener("touchmove", (e) => {
   e.preventDefault();
 
-  // drag
   if (e.touches.length === 1 && isDragging) {
     let x = e.touches[0].clientX;
     offsetX += x - lastX;
@@ -255,7 +282,6 @@ canvas.addEventListener("touchmove", (e) => {
     drawFromInput();
   }
 
-  // pinch zoom
   if (e.touches.length === 2) {
     let dist = getDistance(e.touches);
 
