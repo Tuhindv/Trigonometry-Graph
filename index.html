@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trigonometry Graph Visualizer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <div class="header">
+    📐 Trigonometry Graph Visualizer
+  </div>
+
+  <div class="sub-header">
+    Interactive sin, cos, tan learning tool 📊
+  </div>
+
+  <div class="top-bar">
+    <input id="expr" placeholder="Try: sin 30 / cos 60 / tan 45">
+    <button onclick="drawFromInput()">Plot</button>
+  </div>
+
+  <canvas id="graph"></canvas>
+
+  <div class="help">
+    📌 Drag = Move | Pinch = Zoom | Clean Trig Visualization
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
