@@ -46,7 +46,7 @@ function drawGrid() {
   ctx.strokeStyle = "#eee";
 
   let step = 40;
-  let startX = -(offsetX % step);
+  let startX = offsetX % step;
 
   for (let x = startX; x < canvas.width; x += step) {
     ctx.moveTo(x, 0);
@@ -118,11 +118,28 @@ function drawYAxisLabels() {
   ctx.fillStyle = "black";
   ctx.font = "bold 13px Arial";
 
-  let scaleY = getScaleY();
+  let sY = getScaleY();
+  let centerY = canvas.height / 2;
 
-  for (let y = -3; y <= 3; y++) {
-    let py = canvas.height / 2 - y * scaleY;
-    ctx.fillText(y, canvas.width / 2 + 10, py + 4);
+  // 🔥 visible world range (zoom-based)
+  let visibleRange = canvas.height / sY;
+
+  // 🔥 smart step (optional but important)
+  let step = 1;
+  if (zoom > 2) step = 0.5;
+  if (zoom > 4) step = 0.2;
+  if (zoom < 0.7) step = 2;
+
+  let start = Math.floor(-visibleRange / 2);
+
+  for (let y = start; y <= visibleRange / 2; y += step) {
+    let py = centerY - y * sY;
+
+    ctx.fillText(
+      y.toFixed(step < 1 ? 1 : 0),
+      canvas.width / 2 + 10,
+      py + 4
+    );
   }
 }
 
