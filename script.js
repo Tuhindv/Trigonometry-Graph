@@ -10,13 +10,23 @@ let lastX = 0;
 let lastDist = null;
 
 // =======================
-// 📱 MOBILE SAFE CANVAS
+// 📱 MOBILE + SHARP CANVAS FIX (IMPORTANT)
 // =======================
 function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight - 160; // header + input space fix
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = canvas.clientHeight * dpr;
+
+  canvas.style.width = canvas.clientWidth + "px";
+  canvas.style.height = canvas.clientHeight + "px";
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset
+  ctx.scale(dpr, dpr);
+
   drawFromInput();
 }
+
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
@@ -24,11 +34,11 @@ resizeCanvas();
 // 📊 SCALE
 // =======================
 function getScaleY() {
-  return canvas.height / 6;
+  return canvas.height / (6 * (window.devicePixelRatio || 1));
 }
 
 function scaleX() {
-  return (canvas.width / (4 * Math.PI)) * zoom;
+  return (canvas.width / (4 * Math.PI)) * zoom / (window.devicePixelRatio || 1);
 }
 
 // =======================
@@ -46,116 +56,67 @@ function getValue(fn, x) {
 }
 
 // =======================
-// 🔥 GRID (CLEAR FIX)
+// 🔥 GRID (LIGHT CLEAR)
 // =======================
 function drawGrid() {
   ctx.beginPath();
-  ctx.strokeStyle = "#e5e7eb"; // light gray grid
+  ctx.strokeStyle = "#f1f5f9";
+  ctx.lineWidth = 1;
 
   let step = 40;
   let startX = offsetX % step;
 
-  for (let x = startX; x < canvas.width; x += step) {
+  for (let x = startX; x < canvas.clientWidth; x += step) {
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.height);
+    ctx.lineTo(x, canvas.clientHeight);
   }
 
-  for (let y = 0; y < canvas.height; y += step) {
+  for (let y = 0; y < canvas.clientHeight; y += step) {
     ctx.moveTo(0, y);
-    ctx.lineTo(canvas.width, y);
+    ctx.lineTo(canvas.clientWidth, y);
   }
 
   ctx.stroke();
 }
 
 // =======================
-// 🔥 AXIS (CLEAR FIX)
+// 🔥 AXIS (CLEAR)
 // =======================
 function drawAxes() {
   ctx.beginPath();
-  ctx.strokeStyle = "#111827"; // visible dark gray
+  ctx.strokeStyle = "#0f172a";
   ctx.lineWidth = 2.5;
 
-  let centerX = canvas.width / 2 + offsetX;
+  let centerX = canvas.clientWidth / 2 + offsetX;
 
   // X axis
-  ctx.moveTo(0, canvas.height / 2);
-  ctx.lineTo(canvas.width, canvas.height / 2);
+  ctx.moveTo(0, canvas.clientHeight / 2);
+  ctx.lineTo(canvas.clientWidth, canvas.clientHeight / 2);
 
   // Y axis
   ctx.moveTo(centerX, 0);
-  ctx.lineTo(centerX, canvas.height);
+  ctx.lineTo(centerX, canvas.clientHeight);
 
   ctx.stroke();
 }
 
 // =======================
-// 📊 π LABELS
-// =======================
-function drawXAxisLabels() {
-  ctx.fillStyle = "black";
-  ctx.font = "bold 13px Arial";
-
-  let sX = scaleX();
-  let centerX = canvas.width / 2 + offsetX;
-
-  let left = (0 - centerX) / sX;
-  let right = (canvas.width - centerX) / sX;
-
-  let step = Math.PI / 2;
-  let start = Math.floor(left / step) * step;
-
-  for (let x = start; x <= right; x += step) {
-    let px = centerX + x * sX;
-
-    let k = Math.round(x / (Math.PI / 2));
-    let label = "";
-
-    if (k === 0) label = "0";
-    else if (k % 2 === 0) {
-      let n = k / 2;
-      label = `${n === 1 ? "" : n === -1 ? "-" : n}π`;
-    } else {
-      label = `${k}π/2`;
-    }
-
-    ctx.fillText(label, px - 15, canvas.height / 2 + 20);
-  }
-}
-
-// =======================
-// Y LABELS
-// =======================
-function drawYAxisLabels() {
-  ctx.fillStyle = "black";
-  ctx.font = "bold 13px Arial";
-
-  let scaleY = getScaleY();
-
-  for (let y = -3; y <= 3; y++) {
-    let py = canvas.height / 2 - y * scaleY;
-    ctx.fillText(y, canvas.width / 2 + 10, py + 4);
-  }
-}
-
-// =======================
-// 📈 GRAPH
+// 📊 GRAPH
 // =======================
 function drawGraph(fn) {
   let sX = scaleX();
-  let centerX = canvas.width / 2 + offsetX;
+  let centerX = canvas.clientWidth / 2 + offsetX;
 
   ctx.beginPath();
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = "#1d4ed8"; // blue curve
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#2563eb";
 
-  // glow effect
-  ctx.shadowColor = "rgba(29,78,216,0.25)";
-  ctx.shadowBlur = 3;
+  ctx.shadowColor = "rgba(37,99,235,0.25)";
+  ctx.shadowBlur = 2;
 
   let first = true;
 
-  for (let px = 0; px < canvas.width; px++) {
+  for (let px = 0; px < canvas.clientWidth; px++) {
     let x = (px - centerX) / sX;
     let y = getValue(fn, x);
 
@@ -164,7 +125,7 @@ function drawGraph(fn) {
       continue;
     }
 
-    let py = canvas.height / 2 - y * getScaleY();
+    let py = canvas.clientHeight / 2 - y * getScaleY();
 
     if (first) {
       ctx.moveTo(px, py);
@@ -179,11 +140,11 @@ function drawGraph(fn) {
 }
 
 // =======================
-// 🔴 POINT
+// 🔴 POINT (FIXED VISIBILITY)
 // =======================
 function drawPoint(fn, deg) {
   let sX = scaleX();
-  let centerX = canvas.width / 2 + offsetX;
+  let centerX = canvas.clientWidth / 2 + offsetX;
 
   let rad = deg * Math.PI / 180;
   let x = centerX + rad * sX;
@@ -191,12 +152,16 @@ function drawPoint(fn, deg) {
 
   if (!isFinite(y)) return;
 
-  let py = canvas.height / 2 - y * getScaleY();
+  let py = canvas.clientHeight / 2 - y * getScaleY();
 
   ctx.beginPath();
-  ctx.fillStyle = "red";
-  ctx.arc(x, py, 5, 0, Math.PI * 2);
+  ctx.fillStyle = "#ef4444";
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+
+  ctx.arc(x, py, 6, 0, Math.PI * 2);
   ctx.fill();
+  ctx.stroke();
 
   ctx.fillStyle = "black";
   ctx.font = "bold 13px Arial";
@@ -217,16 +182,10 @@ function drawFromInput() {
   currentFunc = fnMatch[1];
   let deg = numMatch ? parseFloat(numMatch[0]) : NaN;
 
-  // 🔥 mobile readable reset
-  zoom = 1.3;
-  offsetX = 0;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
   drawGrid();
   drawAxes();
-  drawXAxisLabels();
-  drawYAxisLabels();
   drawGraph(currentFunc);
 
   if (!isNaN(deg)) drawPoint(currentFunc, deg);
