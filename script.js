@@ -61,11 +61,11 @@ function drawGrid() {
   ctx.stroke();
 }
 
-// 🔥 AXES (WHITE FIX)
+// 🔥 AXES
 function drawAxes() {
   ctx.beginPath();
-  ctx.strokeStyle = "#ffffff";   // ✅ FIXED: white border/axis
-  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
 
   let centerX = canvas.width / 2 + offsetX;
 
@@ -73,7 +73,7 @@ function drawAxes() {
   ctx.moveTo(0, canvas.height / 2);
   ctx.lineTo(canvas.width, canvas.height / 2);
 
-  // Y axis
+  // Y axis (moves with pan)
   ctx.moveTo(centerX, 0);
   ctx.lineTo(centerX, canvas.height);
 
@@ -247,6 +247,7 @@ canvas.addEventListener("touchstart", (e) => {
 canvas.addEventListener("touchmove", (e) => {
   e.preventDefault();
 
+  // drag
   if (e.touches.length === 1 && isDragging) {
     let x = e.touches[0].clientX;
     offsetX += x - lastX;
@@ -254,6 +255,7 @@ canvas.addEventListener("touchmove", (e) => {
     drawFromInput();
   }
 
+  // pinch zoom
   if (e.touches.length === 2) {
     let dist = getDistance(e.touches);
 
