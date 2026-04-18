@@ -9,41 +9,26 @@ let isDragging = false;
 let lastX = 0;
 let lastDist = null;
 
-// =======================
-// 📱 MOBILE + SHARP CANVAS FIX (IMPORTANT)
-// =======================
+// 🔥 resize canvas (full screen support)
 function resizeCanvas() {
-  const dpr = window.devicePixelRatio || 1;
-
-  canvas.width = canvas.clientWidth * dpr;
-  canvas.height = canvas.clientHeight * dpr;
-
-  canvas.style.width = canvas.clientWidth + "px";
-  canvas.style.height = canvas.clientHeight + "px";
-
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset
-  ctx.scale(dpr, dpr);
-
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
   drawFromInput();
 }
-
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
-// =======================
-// 📊 SCALE
-// =======================
+// 🔥 dynamic Y scale (clear graph)
 function getScaleY() {
-  return canvas.height / (6 * (window.devicePixelRatio || 1));
+  return canvas.height / 6;
 }
 
+// X scale
 function scaleX() {
-  return (canvas.width / (4 * Math.PI)) * zoom / (window.devicePixelRatio || 1);
+  return (canvas.width / (4 * Math.PI)) * zoom;
 }
 
-// =======================
-// 🔢 TRIG FUNCTIONS
-// =======================
+// trig functions
 function getValue(fn, x) {
   switch (fn) {
     case "sin": return Math.sin(x);
@@ -55,68 +40,102 @@ function getValue(fn, x) {
   }
 }
 
-// =======================
-// 🔥 GRID (LIGHT CLEAR)
-// =======================
+// 🔥 GRID
 function drawGrid() {
   ctx.beginPath();
-  ctx.strokeStyle = "#f1f5f9";
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = "#eee";
 
   let step = 40;
   let startX = offsetX % step;
 
-  for (let x = startX; x < canvas.clientWidth; x += step) {
+  for (let x = startX; x < canvas.width; x += step) {
     ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.clientHeight);
+    ctx.lineTo(x, canvas.height);
   }
 
-  for (let y = 0; y < canvas.clientHeight; y += step) {
+  for (let y = 0; y < canvas.height; y += step) {
     ctx.moveTo(0, y);
-    ctx.lineTo(canvas.clientWidth, y);
+    ctx.lineTo(canvas.width, y);
   }
 
   ctx.stroke();
 }
 
-// =======================
-// 🔥 AXIS (CLEAR)
-// =======================
+// 🔥 AXES
 function drawAxes() {
   ctx.beginPath();
-  ctx.strokeStyle = "#0f172a";
-  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
 
-  let centerX = canvas.clientWidth / 2 + offsetX;
+  let centerX = canvas.width / 2 + offsetX;
 
-  // X axis
-  ctx.moveTo(0, canvas.clientHeight / 2);
-  ctx.lineTo(canvas.clientWidth, canvas.clientHeight / 2);
+  ctx.moveTo(0, canvas.height / 2);
+  ctx.lineTo(canvas.width, canvas.height / 2);
 
-  // Y axis
   ctx.moveTo(centerX, 0);
-  ctx.lineTo(centerX, canvas.clientHeight);
+  ctx.lineTo(centerX, canvas.height);
 
   ctx.stroke();
+  ctx.lineWidth = 1;
 }
 
-// =======================
-// 📊 GRAPH
-// =======================
+// 🔥 π LABELS
+function drawXAxisLabels() {
+  ctx.fillStyle = "black";
+  ctx.font = "bold 13px Arial";
+
+  let sX = scaleX();
+  let centerX = canvas.width / 2 + offsetX;
+
+  let left = (0 - centerX) / sX;
+  let right = (canvas.width - centerX) / sX;
+
+  let step = Math.PI / 2;
+  let start = Math.floor(left / step) * step;
+
+  for (let x = start; x <= right; x += step) {
+    let px = centerX + x * sX;
+
+    let k = Math.round(x / (Math.PI / 2));
+    let label = "";
+
+    if (k === 0) label = "0";
+    else if (k % 2 === 0) {
+      let n = k / 2;
+      label = `${n === 1 ? "" : n === -1 ? "-" : n}π`;
+    } else {
+      label = `${k}π/2`;
+    }
+
+    ctx.fillText(label, px - 15, canvas.height / 2 + 20);
+  }
+}
+
+// 🔥 Y LABELS
+function drawYAxisLabels() {
+  ctx.fillStyle = "black";
+  ctx.font = "bold 13px Arial";
+
+  let scaleY = getScaleY();
+
+  for (let y = -3; y <= 3; y++) {
+    let py = canvas.height / 2 - y * scaleY;
+    ctx.fillText(y, canvas.width / 2 + 10, py + 4);
+  }
+}
+
+// 🔥 GRAPH DRAW
 function drawGraph(fn) {
   let sX = scaleX();
-  let centerX = canvas.clientWidth / 2 + offsetX;
+  let centerX = canvas.width / 2 + offsetX;
 
   ctx.beginPath();
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   ctx.strokeStyle = "#2563eb";
-
-  ctx.shadowColor = "rgba(37,99,235,0.25)";
-  ctx.shadowBlur = 2;
 
   let first = true;
 
-  for (let px = 0; px < canvas.clientWidth; px++) {
+  for (let px = 0; px < canvas.width; px++) {
     let x = (px - centerX) / sX;
     let y = getValue(fn, x);
 
@@ -125,7 +144,7 @@ function drawGraph(fn) {
       continue;
     }
 
-    let py = canvas.clientHeight / 2 - y * getScaleY();
+    let py = canvas.height / 2 - y * getScaleY();
 
     if (first) {
       ctx.moveTo(px, py);
@@ -136,15 +155,12 @@ function drawGraph(fn) {
   }
 
   ctx.stroke();
-  ctx.shadowBlur = 0;
 }
 
-// =======================
-// 🔴 POINT (FIXED VISIBILITY)
-// =======================
+// 🔴 POINT FIXED (VISIBLE ON MOBILE)
 function drawPoint(fn, deg) {
   let sX = scaleX();
-  let centerX = canvas.clientWidth / 2 + offsetX;
+  let centerX = canvas.width / 2 + offsetX;
 
   let rad = deg * Math.PI / 180;
   let x = centerX + rad * sX;
@@ -152,25 +168,31 @@ function drawPoint(fn, deg) {
 
   if (!isFinite(y)) return;
 
-  let py = canvas.clientHeight / 2 - y * getScaleY();
+  let py = canvas.height / 2 - y * getScaleY();
 
+  // 🔥 outer white border (for contrast)
   ctx.beginPath();
-  ctx.fillStyle = "#ef4444";
-  ctx.strokeStyle = "#ffffff";
-  ctx.lineWidth = 2;
-
-  ctx.arc(x, py, 6, 0, Math.PI * 2);
+  ctx.arc(x, py, 7, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
   ctx.fill();
+
+  // 🔥 main red point
+  ctx.beginPath();
+  ctx.arc(x, py, 5, 0, Math.PI * 2);
+  ctx.fillStyle = "#ef4444";
+  ctx.fill();
+
+  // 🔥 outline for clarity
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "#111827";
   ctx.stroke();
 
-  ctx.fillStyle = "black";
+  ctx.fillStyle = "#111827";
   ctx.font = "bold 13px Arial";
   ctx.fillText(`${fn}(${deg}°) = ${y.toFixed(2)}`, x + 10, py - 10);
 }
 
-// =======================
-// 🧠 MAIN DRAW
-// =======================
+// 🔥 MAIN DRAW
 function drawFromInput() {
   let expr = document.getElementById("expr").value.toLowerCase().trim();
 
@@ -182,18 +204,18 @@ function drawFromInput() {
   currentFunc = fnMatch[1];
   let deg = numMatch ? parseFloat(numMatch[0]) : NaN;
 
-  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   drawGrid();
   drawAxes();
+  drawXAxisLabels();
+  drawYAxisLabels();
   drawGraph(currentFunc);
 
   if (!isNaN(deg)) drawPoint(currentFunc, deg);
 }
 
-// =======================
 // 🖱️ DESKTOP
-// =======================
 canvas.addEventListener("wheel", (e) => {
   e.preventDefault();
   zoom *= e.deltaY < 0 ? 1.1 : 0.9;
@@ -216,9 +238,7 @@ canvas.addEventListener("mousemove", (e) => {
   drawFromInput();
 });
 
-// =======================
 // 📱 MOBILE
-// =======================
 canvas.addEventListener("touchstart", (e) => {
   if (e.touches.length === 1) {
     isDragging = true;
