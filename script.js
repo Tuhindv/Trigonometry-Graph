@@ -46,7 +46,7 @@ function drawGrid() {
   ctx.strokeStyle = "#eee";
 
   let step = 40;
-  let startX = offsetX % step;
+  let startX = -(offsetX % step);
 
   for (let x = startX; x < canvas.width; x += step) {
     ctx.moveTo(x, 0);
